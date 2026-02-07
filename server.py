@@ -6,6 +6,7 @@ sio = socketio.Server(cors_allowed_origins="*")
 app = socketio.WSGIApp(sio)
 
 clients = {}  # sid -> nickname
+game_started = False  # стан гри
 
 
 @sio.event
@@ -15,18 +16,30 @@ def connect(sid, environ):
 
 @sio.event
 def disconnect(sid):
+    global game_started
     if sid in clients:
         nickname = clients[sid]
         print(f"[-] {nickname} вийшов")
         del clients[sid]
         send_players()
+        # якщо гравців менше 2 — гра зупиняється
+        if game_started and len(clients) < 2:
+            game_started = False
+            sio.emit("stop_game")
 
 
 @sio.event
 def join(sid, nickname):
+    global game_started
     clients[sid] = nickname
     print(f"[+] {nickname} підключився")
     send_players()
+
+    # Якщо підключилось 2 гравці і гра ще не почалася — стартуємо гру
+    if len(clients) == 2 and not game_started:
+        game_started = True
+        print("Стартує гра!")
+        sio.emit("start_game")  # всім клієнтам сигнал про старт гри
 
 
 def send_players():
