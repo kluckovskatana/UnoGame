@@ -1,6 +1,8 @@
 import socketio
 import customtkinter as ctk
 import threading
+import pygame
+import sys
 
 HOST = "http://127.0.0.1:5555"
 
@@ -27,7 +29,7 @@ def players(data):
 @sio.event
 def start_game():
     print("Гра стартує!")
-    open_game_window()
+    threading.Thread(target=run_pygame_game).start()  # Pygame в окремому потоці
 
 # ===================== Функції =====================
 def connect_to_server():
@@ -44,16 +46,30 @@ def connect_to_server():
     except Exception as e:
         print("Помилка підключення:", e)
 
-def open_game_window():
-    # нове вікно гри
-    game_win = ctk.CTkToplevel(root)
-    game_win.title("Гра")
-    game_win.geometry("400x400")
+# ===================== Pygame Гра =====================
+def run_pygame_game():
+    pygame.init()
+    WIDTH, HEIGHT = 600, 600
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Уно")
 
-    ctk.CTkLabel(game_win, text="Гра почалася!", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=20)
+    clock = pygame.time.Clock()
+    font = pygame.font.Font(None, 36)
 
-    # тут можна додати елементи самої гри
-    ctk.CTkLabel(game_win, text="Тут буде ігровий інтерфейс").pack(pady=10)
+    running = True
+    while running:
+        screen.fill((200, 255, 200))  # світло-зелений фон
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+
+        pygame.display.flip()
+        clock.tick(60)
+
+    pygame.quit()
+    print("Pygame вікно закрите")
 
 # ===================== GUI =====================
 root = ctk.CTk()

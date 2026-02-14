@@ -1,54 +1,48 @@
 import socketio
 import eventlet
+from eventlet import wsgi
+from flask import Flask
 
-# створюємо сервер Socket.IO
-sio = socketio.Server(cors_allowed_origins="*")
-app = socketio.WSGIApp(sio)
+sio = socketio.Server(cors_allowed_origins="*")  # дозволяємо всі джерела
+app = Flask(__name__)
 
-clients = {}  # sid -> nickname
-game_started = False  # стан гри
+players = []  # список підключених гравців
+colors = ['G', 'R', 'B', 'Y']
+numbers = [str(i) for i in range(10)]
 
-
+result = [f"{num}_{color}" for color in colors for num in numbers]
+# ===================== Socket.IO події =====================
 @sio.event
 def connect(sid, environ):
-    print(f"[+] Нове підключення: {sid}")
-
+    print(f"Підключено: {sid}")
 
 @sio.event
 def disconnect(sid):
-    global game_started
-    if sid in clients:
-        nickname = clients[sid]
-        print(f"[-] {nickname} вийшов")
-        del clients[sid]
-        send_players()
-        # якщо гравців менше 2 — гра зупиняється
-        if game_started and len(clients) < 2:
-            game_started = False
-            sio.emit("stop_game")
-
+    global players
+    print(f"Відключено: {sid}")
+    # видаляємо гравця за sid
+    for p in players:
+        if p["sid"] == sid:
+            players.remove(p)
+            break
+    # надсилаємо оновлений список всім
+    sio.emit("players", [p["name"] for p in players])
 
 @sio.event
 def join(sid, nickname):
-    global game_started
-    clients[sid] = nickname
-    print(f"[+] {nickname} підключився")
-    send_players()
+    global players
+    print(f"{nickname} приєднався")
+    players.append({"sid": sid, "name": nickname})
+    # надсилаємо список усім клієнтам
+    sio.emit("players", [p["name"] for p in players])
 
-    # Якщо підключилось 2 гравці і гра ще не почалася — стартуємо гру
-    if len(clients) == 2 and not game_started:
-        game_started = True
-        print("Стартує гра!")
-        sio.emit("start_game")  # всім клієнтам сигнал про старт гри
+    # якщо двоє гравців, стартуємо гру
+    if len(players) == 2:
+        sio.emit("start_game")
+        print("Гра стартує!")
 
-
-def send_players():
-    players_list = list(clients.values())
-    print(f"Онлайн: {players_list}")
-    sio.emit("players", players_list)
-
-
-# запуск сервера
+# ===================== Запуск сервера =====================
 if __name__ == "__main__":
-    print("Socket.IO сервер запущено...")
-    eventlet.wsgi.server(eventlet.listen(("0.0.0.0", 5555)), app)
+    app = socketio.WSGIApp(sio, app)
+    print("Сервер запущено на http://127.0.0.1:5555")
+    wsgi.server(eventlet.listen(("0.0.0.0", 5555)), app)
