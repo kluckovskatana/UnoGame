@@ -1,5 +1,6 @@
 import socketio
 import eventlet
+import random
 from eventlet import wsgi
 from flask import Flask
 
@@ -10,7 +11,26 @@ players = []  # список підключених гравців
 colors = ['G', 'R', 'B', 'Y']
 numbers = [str(i) for i in range(10)]
 
-result = [f"{num}_{color}" for color in colors for num in numbers]
+# Припустимо, що колода вже створена
+numbers = list(range(0, 10))  # або інші значення, залежно від карт
+colors = ["R", "G", "B", "Y"]  # Red, Green, Blue, Yellow
+result = [f"{num}{color}" for color in colors for num in numbers]
+result += result  # дублюємо, як у твоєму прикладі
+
+def rozkudka():
+    # Вибираємо 7 випадкових карт
+    hand = random.sample(result, 7)
+    
+    # Видаляємо вибрані карти з колоди
+    for card in hand:
+        result.remove(card)
+    
+    return hand
+
+# Приклад використання
+player_hand = rozkudka()
+print("Рука гравця:", player_hand)
+print("Залишок колоди:", result[:20], "...")  # показати лише частину для перевірки 
 # ===================== Socket.IO події =====================
 @sio.event
 def connect(sid, environ):
