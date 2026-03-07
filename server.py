@@ -20,17 +20,15 @@ result += result  # дублюємо, як у твоєму прикладі
 def rozkudka():
     # Вибираємо 7 випадкових карт
     hand = random.sample(result, 7)
-    
     # Видаляємо вибрані карти з колоди
     for card in hand:
         result.remove(card)
-    
     return hand
 
 # Приклад використання
 player_hand = rozkudka()
-print("Рука гравця:", player_hand)
-print("Залишок колоди:", result[:20], "...")  # показати лише частину для перевірки 
+# print("Рука гравця:", player_hand)
+# print("Залишок колоди:", result[:20], "...")  # показати лише частину для перевірки 
 # ===================== Socket.IO події =====================
 @sio.event
 def connect(sid, environ):
@@ -52,13 +50,18 @@ def disconnect(sid):
 def join(sid, nickname):
     global players
     print(f"{nickname} приєднався")
+    print(players)
     players.append({"sid": sid, "name": nickname})
     # надсилаємо список усім клієнтам
     sio.emit("players", [p["name"] for p in players])
 
     # якщо двоє гравців, стартуємо гру
     if len(players) == 2:
-        sio.emit("start_game")
+        # Передаємо кожному гравцю його руку карт
+        for p in players:            
+            p["hand"] = rozkudka()
+
+        sio.emit("start_game", players)
         print("Гра стартує!")
 
 # ===================== Запуск сервера =====================

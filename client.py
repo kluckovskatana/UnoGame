@@ -4,6 +4,7 @@ import threading
 import pygame
 import sys
 
+data = None
 HOST = "http://127.0.0.1:5555"
 
 sio = socketio.Client()
@@ -26,9 +27,12 @@ def players(data):
     text = "Онлайн:\n" + "\n".join(data)
     players_list.configure(text=text)
 
+
+
 @sio.event
-def start_game():
-    print("Гра стартує!")
+def start_game(players):
+    global data
+    data = players
     threading.Thread(target=run_pygame_game).start()  # Pygame в окремому потоці
 
 # ===================== Функції =====================
@@ -58,6 +62,7 @@ def run_pygame_game():
 
     running = True
     while running:
+        print("Гра стартує!", data)
         screen.fill((200, 255, 200))  # світло-зелений фон
 
         for event in pygame.event.get():
