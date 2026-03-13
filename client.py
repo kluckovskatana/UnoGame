@@ -105,6 +105,13 @@ def run_pygame_game():
             if event.type == pygame.QUIT:
                 running = False
 
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # Перевірка хітбоксу UNO карти
+                for img_rect in hand_images:
+                    img_rect = img_rect.get_rect()
+                    if img_rect.collidepoint(event.pos):
+                        print("Натиснуто на", img_rect)
+
         # Draw players' hands (example: one row per player)
         y_offset = 400
         for hand_images in players_cards:
